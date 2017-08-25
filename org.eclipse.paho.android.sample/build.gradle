@@ -23,6 +23,7 @@ android {
     dexOptions {
         preDexLibraries = false
     }
+    buildToolsVersion '25.0.0'
 }
 
 repositories {
@@ -37,6 +38,7 @@ dependencies {
     compile "com.android.support:recyclerview-v7:${rootProject.ext.supportLibVersion}"
     compile "org.eclipse.paho:org.eclipse.paho.client.mqttv3:${rootProject.ext.clientVersion}"
     compile (project(':org.eclipse.paho.android.service')){
+
         //exclude module: "org.eclipse.paho.client.mqttv3"
         transitive=true
     }
