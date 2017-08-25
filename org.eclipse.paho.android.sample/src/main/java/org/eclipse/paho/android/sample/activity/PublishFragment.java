@@ -1,6 +1,8 @@
 package org.eclipse.paho.android.sample.activity;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -18,6 +20,9 @@ import android.widget.Switch;
 import org.eclipse.paho.android.sample.R;
 import org.eclipse.paho.android.sample.internal.Connections;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 
 
@@ -27,8 +32,13 @@ public class PublishFragment extends Fragment {
 
     private int selectedQos = 0;
     private boolean retainValue = false;
-    private String topic = "/test";
+    private String topic = "paho/test/simple";
     private String message = "Hello world";
+    private Button publishButton;
+    private Button publishTimestampButton;
+    private Button msgCountButton;
+    private Boolean publishTimestampBoolean = false;
+    private AsyncTask BgTask;
 
     public PublishFragment() {
         // Required empty public constructor
@@ -113,14 +123,30 @@ public class PublishFragment extends Fragment {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         qos.setAdapter(adapter);
 
-        Button publishButton = (Button) rootView.findViewById(R.id.publish_button);
+        publishButton = (Button) rootView.findViewById(R.id.publish_button);
         publishButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                System.out.println("Publising: [topic: " + topic + ", message: " + message + ", QoS: " + selectedQos + ", Retain: " + retainValue + "]");
+                System.out.println("Publishing: [topic: " + topic + ", message: " + message + ", QoS: " + selectedQos + ", Retain: " + retainValue + "]");
                 ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
 
 
+            }
+        });
+
+        msgCountButton = (Button) rootView.findViewById(R.id.msg_count_button);
+
+        publishTimestampButton = (Button) rootView.findViewById(R.id.publish_timestamp_button);
+        publishTimestampButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                System.out.println("Publishing timestamp: [topic: " + topic + ", QoS: " + selectedQos + ", Retain: " + retainValue + "]");
+                if(publishTimestampBoolean == false){
+                    startPublishTimestamp();
+                }
+                else{
+                    stopPublishTimestamp();
+                }
             }
         });
 
@@ -129,5 +155,55 @@ public class PublishFragment extends Fragment {
         return rootView;
     }
 
+    private String getTimeStamp(){
+
+        Long tsLong = System.currentTimeMillis();
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd yyyy HH:mm:ss:SS", Locale.US);
+        Date resultDate = new Date(tsLong);
+        String ts = sdf.format(resultDate);
+        return ts;
+    }
+
+    private void startPublishTimestamp(){
+        publishTimestampBoolean = true;
+        publishButton.setEnabled(false);
+        publishTimestampButton.setText(getResources().getString(R.string.stop_publish_timestamp));
+        msgCountButton.setVisibility(View.VISIBLE);
+        BgTask = new PublishTimestampTask().execute();
+
+    }
+
+    private void stopPublishTimestamp(){
+        publishTimestampBoolean = false;
+        BgTask.cancel(true);
+        publishButton.setEnabled(true);
+        publishTimestampButton.setText(getResources().getString(R.string.publish_timestamp));
+
+    }
+
+    private class PublishTimestampTask extends AsyncTask<Void, Integer, Void> {
+
+        @Override
+        protected Void doInBackground(Void... countArray) {
+
+            int count = 0;
+            while(!isCancelled()){
+                message = getTimeStamp();
+                ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
+                count++;
+                publishProgress(count);
+                SystemClock.sleep(100);
+            }
+            return null;
+
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            msgCountButton.setText("message count: " + progress[0]);
+        }
+
+
+    }
 
 }
