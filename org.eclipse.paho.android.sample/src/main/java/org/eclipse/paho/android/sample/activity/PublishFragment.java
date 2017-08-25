@@ -38,6 +38,8 @@ public class PublishFragment extends Fragment {
     private Button publishTimestampButton;
     private Button msgCountButton;
     private Boolean publishTimestampBoolean = false;
+    private EditText timeIntervalEditText;
+    private int timeInterval;
     private AsyncTask BgTask;
 
     public PublishFragment() {
@@ -150,6 +152,28 @@ public class PublishFragment extends Fragment {
             }
         });
 
+        timeIntervalEditText = (EditText) rootView.findViewById(R.id.time_interval);
+        timeInterval = Integer.valueOf(timeIntervalEditText.getText().toString());
+        System.out.println("default time interval: " + timeInterval);
+
+        timeIntervalEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                timeInterval = Integer.valueOf(s.toString());
+                System.out.println("new time interval: " + timeInterval);
+            }
+        });
+
 
         // Inflate the layout for this fragment
         return rootView;
@@ -192,7 +216,7 @@ public class PublishFragment extends Fragment {
                 ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
                 count++;
                 publishProgress(count);
-                SystemClock.sleep(100);
+                SystemClock.sleep(timeInterval);
             }
             return null;
 
