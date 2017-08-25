@@ -92,6 +92,9 @@
     <string name="publish">Publish</string>
     <string name="publish_timestamp">Publish timestamp</string>
     <string name="stop_publish_timestamp">stop Publish timestamp</string>
+    <string name="time_interval_text">time interval</string>
+    <string name="time_interval_ms">ms</string>
+    <string name="default_time_interval">100</string>
     <string name="msg_count">message count</string>
     <string name="topic_fmt">Topic: %1$s</string>
 
