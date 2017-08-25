@@ -115,6 +115,23 @@
         android:layout_below="@+id/retain_switch"
         android:layout_centerHorizontal="true" />
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/publish_timestamp"
+        android:id="@+id/publish_timestamp_button"
+        android:layout_below="@+id/publish_button"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/msg_count"
+        android:id="@+id/msg_count_button"
+        android:layout_below="@+id/publish_timestamp_button"
+        android:layout_centerHorizontal="true"
+        android:visibility="invisible"/>
+
 
 
 
