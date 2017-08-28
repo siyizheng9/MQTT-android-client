@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -169,7 +170,11 @@ public class PublishFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                timeInterval = Integer.valueOf(s.toString());
+                String str = s.toString();
+                if (TextUtils.isEmpty(str)) {
+                    str = "0";
+                }
+                timeInterval = Integer.valueOf(str);
                 System.out.println("new time interval: " + timeInterval);
             }
         });
@@ -193,6 +198,7 @@ public class PublishFragment extends Fragment {
         publishButton.setEnabled(false);
         publishTimestampButton.setText(getResources().getString(R.string.stop_publish_timestamp));
         msgCountButton.setVisibility(View.VISIBLE);
+        new Notify().EnableToast = false;
         BgTask = new PublishTimestampTask().execute();
 
     }
@@ -202,6 +208,7 @@ public class PublishFragment extends Fragment {
         BgTask.cancel(true);
         publishButton.setEnabled(true);
         publishTimestampButton.setText(getResources().getString(R.string.publish_timestamp));
+        new Notify().EnableToast = true;
 
     }
 

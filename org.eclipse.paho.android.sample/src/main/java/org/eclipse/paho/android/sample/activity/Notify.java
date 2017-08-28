@@ -31,6 +31,9 @@ class Notify {
   /** Message ID Counter **/
   private static int MessageID = 0;
 
+    /** Flag for disable notification **/
+    public static boolean EnableToast = true;
+
   /**
    * Displays a notification in the notification area of the UI
    * @param context Context from which to create the notification
@@ -39,6 +42,8 @@ class Notify {
    * @param notificationTitle The resource reference to the notification title
    */
   static void notifcation(Context context, String messageString, Intent intent, int notificationTitle) {
+
+
 
     //Get the notification manage which we will use to display the notification
     String ns = Context.NOTIFICATION_SERVICE;
@@ -80,6 +85,9 @@ class Notify {
    * @param duration The amount of time for the toast to appear to the user
    */
   static void toast(Context context, CharSequence text, @SuppressWarnings("SameParameterValue") int duration) {
+    if (EnableToast == false) {
+          return;
+    }
     Toast toast = Toast.makeText(context, text, duration);
     toast.show();
   }
