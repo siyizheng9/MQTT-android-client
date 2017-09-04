@@ -1,5 +1,7 @@
 package org.eclipse.paho.android.sample.activity;
 
+import android.content.Context;
+import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -18,11 +20,18 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
 
+import com.opencsv.CSVReader;
+
 import org.eclipse.paho.android.sample.R;
 import org.eclipse.paho.android.sample.internal.Connections;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -180,6 +189,8 @@ public class PublishFragment extends Fragment {
         });
 
 
+
+
         // Inflate the layout for this fragment
         return rootView;
     }
@@ -218,23 +229,51 @@ public class PublishFragment extends Fragment {
         protected Void doInBackground(Void... countArray) {
 
             int count = 0;
-            while(!isCancelled()){
-                message = getTimeStamp();
+            List<String[]> dataList = readCsv(getContext());
+
+            for(int i = 0; i < dataList.size(); i++) {
+                if(isCancelled())
+                    break;
+
+                message = dataList.get(i)[0] + "," + dataList.get(i)[1];
+
                 ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
+
                 count++;
                 publishProgress(count);
                 SystemClock.sleep(timeInterval);
-            }
-            return null;
 
+            }
+
+            return null;
         }
 
         @Override
         protected void onProgressUpdate(Integer... progress) {
             msgCountButton.setText("message count: " + progress[0]);
         }
+    }
 
+    private final List<String[]> readCsv(Context context) {
+        List<String[]> dataList = new ArrayList<String[]>();
+        AssetManager assetManager = context.getAssets();
 
+        try {
+            InputStream csvStream = assetManager.open("sample_data.csv");
+            InputStreamReader csvStreamReader = new InputStreamReader(csvStream);
+            CSVReader csvReader = new CSVReader(csvStreamReader);
+            String[] line;
+
+            while ((line = csvReader.readNext()) != null) {
+                dataList.add(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (dataList.size() > 0) {
+            System.out.println("ecg data: " + dataList.get(0)[0] + "," + dataList.get(0)[1]);
+        }
+        return dataList;
     }
 
 }
