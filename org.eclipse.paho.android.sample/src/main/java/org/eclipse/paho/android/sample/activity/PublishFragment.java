@@ -5,6 +5,7 @@ import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -42,7 +43,8 @@ public class PublishFragment extends Fragment {
 
     private int selectedQos = 0;
     private boolean retainValue = false;
-    private String topic = "paho/test/simple";
+    // private String topic = "paho/test/simple";
+    private String topic = "ecg/test/client-id/data";
     private String message = "Hello world";
     private Button publishButton;
     private Button publishTimestampButton;
@@ -58,6 +60,12 @@ public class PublishFragment extends Fragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
+        String android_id = Settings.Secure.getString(getContext().getContentResolver(),
+                Settings.Secure.ANDROID_ID);
+        System.out.println("android_id: " + android_id);
+        topic = topic.replace("id", android_id.substring(0, 4));
+
         super.onCreate(savedInstanceState);
         Map<String, Connection> connections = Connections.getInstance(this.getActivity())
                 .getConnections();
