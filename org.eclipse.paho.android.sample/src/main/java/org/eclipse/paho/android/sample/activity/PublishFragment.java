@@ -14,8 +14,10 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
+import android.text.Html;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +28,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
+import android.widget.TextView;
 
 import com.google.gson.Gson;
 import com.mbientlab.metawear.MetaWearBoard;
@@ -46,6 +49,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import bolts.Continuation;
+import bolts.Task;
+
 
 public class PublishFragment extends Fragment implements ServiceConnection {
 
@@ -62,8 +68,11 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     private Button publishButton;
     private Button publishTimestampButton;
     private Button msgCountButton;
+    private Button sensorConnectButton;
     private Boolean publishTimestampBoolean = false;
+    private Boolean isSensorConnected = false;
     private EditText timeIntervalEditText;
+    private TextView motionSensorLable;
     private int timeInterval;
     private AsyncTask BgTask;
 
@@ -90,6 +99,8 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         // Bind the service when the activity is created
         getActivity().getApplicationContext().bindService(new Intent(getActivity(), BtleService.class),
                 this, Context.BIND_AUTO_CREATE);
+
+
 
     }
 
@@ -172,6 +183,52 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         });
 
         msgCountButton = (Button) rootView.findViewById(R.id.msg_count_button);
+        motionSensorLable = (TextView) rootView.findViewById(R.id.motion_sensor_label);
+        motionSensorLable.setText(Html.fromHtml("Motion sensor <br> MAC:" + MW_MAC_ADDRESS));
+        sensorConnectButton = (Button) rootView.findViewById(R.id.connectButton);
+        sensorConnectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sensorConnectButton.setEnabled(false);
+                if(isSensorConnected == false) {
+                    board.connectAsync().continueWith(new Continuation<Void, Void>() {
+                        @Override
+                        public Void then(Task<Void> task) throws Exception {
+                            if (task.isFaulted()) {
+                                Log.i("MainActivity", "Failed to connect MotionSensor");
+                            } else {
+                                Log.i("MainActivity", "MotionSensor Connected");
+                                isSensorConnected = true;
+
+                                getActivity().runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        sensorConnectButton.setText("Disconnect");
+                                        sensorConnectButton.setEnabled(true);
+                                    }
+                                });
+                            }
+                            return null;
+                        }
+                    });
+                } else {
+                    board.disconnectAsync().continueWith(new Continuation<Void, Void>() {
+                        @Override
+                        public Void then(Task<Void> task) throws Exception {
+                            Log.i("MainActivity", "MotionSensor Disconnected");
+                            isSensorConnected = false;
+                            getActivity().runOnUiThread(new Runnable() {
+                                public void run() {
+                                    sensorConnectButton.setText("Connect");
+                                    sensorConnectButton.setEnabled(true);
+                                }
+                            });
+                            return null;
+                        }
+                    });
+                }
+
+            }
+        });
 
         publishTimestampButton = (Button) rootView.findViewById(R.id.publish_timestamp_button);
         publishTimestampButton.setOnClickListener(new View.OnClickListener() {
@@ -229,6 +286,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     public void onServiceConnected(ComponentName name, IBinder service) {
         // Typecast the binder to the service's LocalBinder class
         serviceBinder = (BtleService.LocalBinder) service;
+        retrieveBoard();
     }
 
     @Override
@@ -288,6 +346,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
             msgCountButton.setText("message count: " + progress[0]);
         }
     }
+
 
     private void startPublishTimestamp(){
         publishTimestampBoolean = true;
