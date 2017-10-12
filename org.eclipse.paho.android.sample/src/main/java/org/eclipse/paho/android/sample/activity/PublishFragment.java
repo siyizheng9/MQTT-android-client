@@ -56,6 +56,7 @@ import bolts.Task;
 
 public class PublishFragment extends Fragment implements ServiceConnection {
 
+    private final String LOGTAG = "PublishFragment";
     private Connection connection;
     private BtleService.LocalBinder serviceBinder;
     private final String MW_MAC_ADDRESS= "CC:7E:26:31:C2:5F";
@@ -192,9 +193,9 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                         @Override
                         public Void then(Task<Void> task) throws Exception {
                             if (task.isFaulted()) {
-                                Log.i("MainActivity", "Failed to connect MotionSensor");
+                                Log.i(LOGTAG, "Failed to connect MotionSensor");
                             } else {
-                                Log.i("MainActivity", "MotionSensor Connected");
+                                Log.i(LOGTAG, "MotionSensor Connected");
                                 isSensorConnected = true;
                             }
                             getActivity().runOnUiThread(new Runnable() {
@@ -214,7 +215,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                     board.disconnectAsync().continueWith(new Continuation<Void, Void>() {
                         @Override
                         public Void then(Task<Void> task) throws Exception {
-                            Log.i("MainActivity", "MotionSensor Disconnected");
+                            Log.i(LOGTAG, "MotionSensor Disconnected");
                             isSensorConnected = false;
                             getActivity().runOnUiThread(new Runnable() {
                                 public void run() {
@@ -273,7 +274,11 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     public void onServiceConnected(ComponentName name, IBinder service) {
         // Typecast the binder to the service's LocalBinder class
         serviceBinder = (BtleService.LocalBinder) service;
+
         retrieveBoard();
+
+
+
     }
 
     @Override
@@ -296,7 +301,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                 btManager.getAdapter().getRemoteDevice(MW_MAC_ADDRESS);
 
         // Create a MetaWear board object for the Bluetooth Device
-        board= serviceBinder.getMetaWearBoard(remoteDevice);
+        board = serviceBinder.getMetaWearBoard(remoteDevice);
     }
 
 
