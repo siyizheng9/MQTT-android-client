@@ -1,9 +1,15 @@
 package org.eclipse.paho.android.sample.activity;
 
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.v4.app.Fragment;
@@ -22,6 +28,8 @@ import android.widget.Spinner;
 import android.widget.Switch;
 
 import com.google.gson.Gson;
+import com.mbientlab.metawear.MetaWearBoard;
+import com.mbientlab.metawear.android.BtleService;
 import com.opencsv.CSVReader;
 
 import org.eclipse.paho.android.sample.R;
@@ -39,9 +47,12 @@ import java.util.Locale;
 import java.util.Map;
 
 
-public class PublishFragment extends Fragment {
+public class PublishFragment extends Fragment implements ServiceConnection {
 
     private Connection connection;
+    private BtleService.LocalBinder serviceBinder;
+    private final String MW_MAC_ADDRESS= "CC:7E:26:31:C2:5F";
+    private MetaWearBoard board;
 
     private int selectedQos = 0;
     private boolean retainValue = false;
@@ -75,6 +86,10 @@ public class PublishFragment extends Fragment {
 
         System.out.println("FRAGMENT CONNECTION: " + this.getArguments().getString(ActivityConstants.CONNECTION_KEY));
         System.out.println("NAME:" + connection.getId());
+
+        // Bind the service when the activity is created
+        getActivity().getApplicationContext().bindService(new Intent(getActivity(), BtleService.class),
+                this, Context.BIND_AUTO_CREATE);
 
     }
 
@@ -198,12 +213,27 @@ public class PublishFragment extends Fragment {
             }
         });
 
-
-
-
         // Inflate the layout for this fragment
         return rootView;
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        // Unbind the service when the activity is destroyed
+        getActivity().getApplicationContext().unbindService(this);
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder service) {
+        // Typecast the binder to the service's LocalBinder class
+        serviceBinder = (BtleService.LocalBinder) service;
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) { }
+
 
     private String getTimeStamp(){
 
@@ -214,24 +244,17 @@ public class PublishFragment extends Fragment {
         return ts;
     }
 
-    private void startPublishTimestamp(){
-        publishTimestampBoolean = true;
-        publishButton.setEnabled(false);
-        publishTimestampButton.setText(getResources().getString(R.string.stop_publish_timestamp));
-        msgCountButton.setVisibility(View.VISIBLE);
-        new Notify().EnableToast = false;
-        BgTask = new PublishTimestampTask().execute();
+    public void retrieveBoard() {
+        final BluetoothManager btManager=
+                (BluetoothManager) getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
+        final BluetoothDevice remoteDevice=
+                btManager.getAdapter().getRemoteDevice(MW_MAC_ADDRESS);
 
+        // Create a MetaWear board object for the Bluetooth Device
+        board= serviceBinder.getMetaWearBoard(remoteDevice);
     }
 
-    private void stopPublishTimestamp(){
-        publishTimestampBoolean = false;
-        BgTask.cancel(true);
-        publishButton.setEnabled(true);
-        publishTimestampButton.setText(getResources().getString(R.string.publish_timestamp));
-        new Notify().EnableToast = true;
 
-    }
 
     private class PublishTimestampTask extends AsyncTask<Void, Integer, Void> {
 
@@ -264,6 +287,25 @@ public class PublishFragment extends Fragment {
         protected void onProgressUpdate(Integer... progress) {
             msgCountButton.setText("message count: " + progress[0]);
         }
+    }
+
+    private void startPublishTimestamp(){
+        publishTimestampBoolean = true;
+        publishButton.setEnabled(false);
+        publishTimestampButton.setText(getResources().getString(R.string.stop_publish_timestamp));
+        msgCountButton.setVisibility(View.VISIBLE);
+        new Notify().EnableToast = false;
+        BgTask = new PublishTimestampTask().execute();
+
+    }
+
+    private void stopPublishTimestamp(){
+        publishTimestampBoolean = false;
+        BgTask.cancel(true);
+        publishButton.setEnabled(true);
+        publishTimestampButton.setText(getResources().getString(R.string.publish_timestamp));
+        new Notify().EnableToast = true;
+
     }
 
     private final List<String[]> readCsv(Context context) {
