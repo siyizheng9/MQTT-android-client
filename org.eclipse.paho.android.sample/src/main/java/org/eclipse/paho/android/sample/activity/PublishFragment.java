@@ -66,10 +66,8 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     private String topic = "ecg/test/client-id/data";
     private String message = "Hello world";
     private Button publishButton;
-    private Button publishTimestampButton;
     private Button msgCountButton;
     private Button sensorConnectButton;
-    private Boolean publishTimestampBoolean = false;
     private Boolean isSensorConnected = false;
     private EditText timeIntervalEditText;
     private TextView motionSensorLable;
@@ -99,8 +97,6 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         // Bind the service when the activity is created
         getActivity().getApplicationContext().bindService(new Intent(getActivity(), BtleService.class),
                 this, Context.BIND_AUTO_CREATE);
-
-
 
     }
 
@@ -230,19 +226,6 @@ public class PublishFragment extends Fragment implements ServiceConnection {
             }
         });
 
-        publishTimestampButton = (Button) rootView.findViewById(R.id.publish_timestamp_button);
-        publishTimestampButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                System.out.println("Publishing timestamp: [topic: " + topic + ", QoS: " + selectedQos + ", Retain: " + retainValue + "]");
-                if(publishTimestampBoolean == false){
-                    startPublishTimestamp();
-                }
-                else{
-                    stopPublishTimestamp();
-                }
-            }
-        });
 
         timeIntervalEditText = (EditText) rootView.findViewById(R.id.time_interval);
         timeInterval = Integer.valueOf(timeIntervalEditText.getText().toString());
@@ -348,24 +331,6 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     }
 
 
-    private void startPublishTimestamp(){
-        publishTimestampBoolean = true;
-        publishButton.setEnabled(false);
-        publishTimestampButton.setText(getResources().getString(R.string.stop_publish_timestamp));
-        msgCountButton.setVisibility(View.VISIBLE);
-        new Notify().EnableToast = false;
-        BgTask = new PublishTimestampTask().execute();
-
-    }
-
-    private void stopPublishTimestamp(){
-        publishTimestampBoolean = false;
-        BgTask.cancel(true);
-        publishButton.setEnabled(true);
-        publishTimestampButton.setText(getResources().getString(R.string.publish_timestamp));
-        new Notify().EnableToast = true;
-
-    }
 
     private final List<String[]> readCsv(Context context) {
         List<String[]> dataList = new ArrayList<String[]>();
