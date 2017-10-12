@@ -155,8 +155,6 @@
             android:text="@string/time_interval_ms"/>
     </LinearLayout>
 
-
-
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -165,6 +163,30 @@
         android:layout_below="@+id/time_interval_group"
         android:layout_centerHorizontal="true"
         android:visibility="invisible"/>
+
+
+    <LinearLayout
+        android:id="@+id/connect_group"
+        android:layout_below="@id/msg_count_button"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/motion_sensor_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/spinnerTextFieldLabel"
+            android:text="@string/motion_sensor_label"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connect"
+            android:id="@+id/connectButton"/>
+
+    </LinearLayout>
 
 
 
