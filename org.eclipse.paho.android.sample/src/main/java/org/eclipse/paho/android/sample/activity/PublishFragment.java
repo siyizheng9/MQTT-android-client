@@ -29,6 +29,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.mbientlab.metawear.MetaWearBoard;
@@ -195,14 +196,17 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                             } else {
                                 Log.i("MainActivity", "MotionSensor Connected");
                                 isSensorConnected = true;
-
-                                getActivity().runOnUiThread(new Runnable() {
-                                    public void run() {
-                                        sensorConnectButton.setText("Disconnect");
-                                        sensorConnectButton.setEnabled(true);
-                                    }
-                                });
                             }
+                            getActivity().runOnUiThread(new Runnable() {
+                                public void run() {
+                                    if (isSensorConnected)
+                                        sensorConnectButton.setText("Disconnect");
+                                    else
+                                        Notify.toast(getContext(), "Connection failed", Toast.LENGTH_SHORT);
+
+                                    sensorConnectButton.setEnabled(true);
+                                }
+                            });
                             return null;
                         }
                     });
