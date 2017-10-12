@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId rootProject.ext.sampleArchivesBaseName
-        minSdkVersion 16
+        minSdkVersion 18
         targetSdkVersion 24
         versionCode 1
         versionName "0.1"
@@ -28,6 +28,11 @@ android {
 
 repositories {
     maven { url rootProject.ext.mavenUrl }
+
+    ivy {
+        url "https://mbientlab.com/releases/ivyrep"
+        layout "gradle"
+    }
 }
 
 
@@ -45,6 +50,7 @@ dependencies {
 
     compile 'com.opencsv:opencsv:4.0'
     compile 'com.google.code.gson:gson:2.8.2'
+    compile 'com.mbientlab:metawear:3.1.0'
 }
 
 task publishAPK(type: Copy) {

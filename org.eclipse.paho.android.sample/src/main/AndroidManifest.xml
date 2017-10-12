@@ -36,6 +36,7 @@
         <!-- Mqtt Service -->
         <service android:name="org.eclipse.paho.android.service.MqttService">
         </service>
+        <service android:name="com.mbientlab.metawear.android.BtleService" />
     </application>
 
 </manifest>
