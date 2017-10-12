@@ -21,10 +21,12 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
 
+import com.google.gson.Gson;
 import com.opencsv.CSVReader;
 
 import org.eclipse.paho.android.sample.R;
 import org.eclipse.paho.android.sample.internal.Connections;
+import org.eclipse.paho.android.sample.model.ecgMessage;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -238,12 +240,14 @@ public class PublishFragment extends Fragment {
 
             int count = 0;
             List<String[]> dataList = readCsv(getContext());
+            Gson gson = new Gson();
 
             for(int i = 0; i < dataList.size(); i++) {
                 if(isCancelled())
                     break;
 
-                message = dataList.get(i)[0] + "," + dataList.get(i)[1];
+                ecgMessage record = new ecgMessage(dataList.get(i)[0], dataList.get(i)[1]);
+                message = gson.toJson(record);
 
                 ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
 
