@@ -5,6 +5,7 @@ package org.eclipse.paho.android.sample.model;
  */
 
 public class ecgMessage {
+
     public String timestamp;
     public String ecg;
 
