@@ -38,15 +38,18 @@ import com.mbientlab.metawear.Route;
 import com.mbientlab.metawear.UnsupportedModuleException;
 import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.data.Acceleration;
+import com.mbientlab.metawear.data.AngularVelocity;
 import com.mbientlab.metawear.module.Accelerometer;
 import com.mbientlab.metawear.module.AccelerometerBosch;
 import com.mbientlab.metawear.module.AccelerometerMma8452q;
+import com.mbientlab.metawear.module.GyroBmi160;
 import com.opencsv.CSVReader;
 
 import org.eclipse.paho.android.sample.R;
 import org.eclipse.paho.android.sample.internal.Connections;
 import org.eclipse.paho.android.sample.model.accMessage;
 import org.eclipse.paho.android.sample.model.ecgMessage;
+import org.eclipse.paho.android.sample.model.gyroMessage;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,9 +73,14 @@ public class PublishFragment extends Fragment implements ServiceConnection {
 
     // accelerator parameter
     private static final float[] MMA845Q_RANGES= {2.f, 4.f, 8.f}, BOSCH_RANGES = {2.f, 4.f, 8.f, 16.f};
-    private static final float INITIAL_RANGE= 2.f, ACC_FREQ= 50.f;
+    private static final float ACC_FREQ= 50.f;
     protected float samplePeriod;
     protected Route streamRoute = null;
+
+    // gyro parametter
+    private static final float[] AVAILABLE_RANGES= {125.f, 250.f, 500.f, 1000.f, 2000.f};
+    private static final float GYR_ODR= 25.f;
+    private GyroBmi160 gyro = null;
 
     private Connection connection;
     private BtleService.LocalBinder serviceBinder;
@@ -80,7 +88,9 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     private MetaWearBoard board;
     private Accelerometer accelerometer = null;
     private int rangeIndex= 0;
-    private BlockingQueue acc_queue;
+
+    private BlockingQueue mqtt_queue;
+    Gson gson = new Gson();
 
     private int selectedQos = 0;
     private boolean retainValue = false;
@@ -284,13 +294,25 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        acc_queue = new LinkedBlockingQueue();
+        mqtt_queue = new LinkedBlockingQueue();
 
         ((Switch) view.findViewById(R.id.acc_control)).setOnCheckedChangeListener((compoundButton, b) -> {
             if (b) {
                 setup_acc();
             } else {
                 acc_clean();
+                if (streamRoute != null) {
+                    streamRoute.remove();
+                    streamRoute = null;
+                }
+            }
+        });
+
+        ((Switch) view.findViewById(R.id.gyro_control)).setOnCheckedChangeListener((compoundButton, b) -> {
+            if (b) {
+                gyro_setup();
+            } else {
+                gyro_clean();
                 if (streamRoute != null) {
                     streamRoute.remove();
                     streamRoute = null;
@@ -343,7 +365,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     private String getTimeStamp(){
 
         Long tsLong = System.currentTimeMillis();
-        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd yyyy HH:mm:ss:SS", Locale.US);
+        SimpleDateFormat sdf = new SimpleDateFormat("MMM dd yyyy HH:mm:ss:SSS", Locale.US);
         Date resultDate = new Date(tsLong);
         String ts = sdf.format(resultDate);
         return ts;
@@ -377,8 +399,9 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                 accelerometer.acceleration();
         producer.addRouteAsync(source -> source.stream((data, env) -> {
             final Acceleration value = data.value(Acceleration.class);
-            Log.i(LOGTAG, "acc value: " + value.toString());
-            acc_queue.add(value);
+            //Log.i(LOGTAG, "acc value: " + value.toString());
+            accMessage acc = new accMessage(getTimeStamp(), value.toString());
+            mqtt_queue.add(gson.toJson(acc));
             //addChartData(value.x(), value.y(), value.z(), samplePeriod);
         })).continueWith(task -> {
             streamRoute = task.getResult();
@@ -397,8 +420,43 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         ).stop();
     }
 
+    protected void gyro_setup() {
+        GyroBmi160.Range[] values = GyroBmi160.Range.values();
+        gyro.configure()
+                .odr(GyroBmi160.OutputDataRate.ODR_25_HZ)
+                .range(values[values.length - rangeIndex - 1])
+                .commit();
+
+        final float period = 1 / GYR_ODR;
+        final AsyncDataProducer producer = gyro.packedAngularVelocity() == null ?
+                gyro.packedAngularVelocity() :
+                gyro.angularVelocity();
+        producer.addRouteAsync(source -> source.stream((data, env) -> {
+            final AngularVelocity value = data.value(AngularVelocity.class);
+            gyroMessage gyro = new gyroMessage(getTimeStamp(), value.toString());
+            mqtt_queue.add(gson.toJson(gyro));
+        })).continueWith(task -> {
+            streamRoute = task.getResult();
+
+            gyro.angularVelocity().start();
+            gyro.start();
+
+            return null;
+        });
+    }
+
+    protected void gyro_clean() {
+        gyro.stop();
+
+        (gyro.packedAngularVelocity() == null ?
+                gyro.packedAngularVelocity() :
+                gyro.angularVelocity()
+        ).stop();
+    }
+
     private void boardReady() throws UnsupportedModuleException {
         accelerometer = board.getModuleOrThrow(Accelerometer.class);
+        gyro = board.getModuleOrThrow(GyroBmi160.class);
 
     }
 
@@ -409,26 +467,23 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         protected Void doInBackground(Void... countArray) {
 
             int count = 0;
-            //List<String[]> dataList = readCsv(getContext());
-            Gson gson = new Gson();
 
             for(; ;) {
                 if(isCancelled())
                     break;
 
-                // ecgMessage record = new ecgMessage(dataList.get(i)[0], dataList.get(i)[1]);
-                Acceleration acc_value = null;
-
+                String value = null;
                 try{
-                    acc_value = (Acceleration) acc_queue.take();
+
+                    value = (String) mqtt_queue.take();
                 } catch (InterruptedException ex) {
 
                 }
 
-                if(acc_value == null)
+                if (value == null)
                     continue;
 
-                message = gson.toJson(new accMessage(getTimeStamp(), acc_value.toString()));
+                message = value;
 
                 ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
 
