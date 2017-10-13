@@ -137,7 +137,7 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/publish"
+        android:text="@string/start_publish"
         android:id="@+id/publish_button"
         android:layout_below="@+id/connect_group"
         android:layout_centerHorizontal="true" />
@@ -150,6 +150,16 @@
         android:layout_below="@+id/publish_button"
         android:layout_centerHorizontal="true"
         android:visibility="invisible"/>
+
+
+    <Switch xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/label_acc_sample"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:id="@+id/acc_control"
+        android:layout_below="@+id/msg_count_button"
+        android:checked="false" />
 
 
 
