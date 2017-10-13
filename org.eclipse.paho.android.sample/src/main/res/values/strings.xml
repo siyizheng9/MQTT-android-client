@@ -118,6 +118,7 @@
     <!-- strings for motion sensor -->
     <string name="label_acc_sample">Accelerometer</string>
     <string name="label_gyro_sample">Gyro</string>
+    <string name="label_magnet_sample">Magnetometer</string>
 
 
 

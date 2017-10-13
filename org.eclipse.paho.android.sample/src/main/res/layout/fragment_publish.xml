@@ -170,6 +170,15 @@
         android:layout_below="@+id/acc_control"
         android:checked="false" />
 
+    <Switch xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/label_magnet_sample"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:id="@+id/magnet_control"
+        android:layout_below="@+id/gyro_control"
+        android:checked="false" />
+
 
 
 

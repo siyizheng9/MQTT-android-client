@@ -39,10 +39,12 @@ import com.mbientlab.metawear.UnsupportedModuleException;
 import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.data.Acceleration;
 import com.mbientlab.metawear.data.AngularVelocity;
+import com.mbientlab.metawear.data.MagneticField;
 import com.mbientlab.metawear.module.Accelerometer;
 import com.mbientlab.metawear.module.AccelerometerBosch;
 import com.mbientlab.metawear.module.AccelerometerMma8452q;
 import com.mbientlab.metawear.module.GyroBmi160;
+import com.mbientlab.metawear.module.MagnetometerBmm150;
 import com.opencsv.CSVReader;
 
 import org.eclipse.paho.android.sample.R;
@@ -50,6 +52,7 @@ import org.eclipse.paho.android.sample.internal.Connections;
 import org.eclipse.paho.android.sample.model.accMessage;
 import org.eclipse.paho.android.sample.model.ecgMessage;
 import org.eclipse.paho.android.sample.model.gyroMessage;
+import org.eclipse.paho.android.sample.model.magnetMessage;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -77,10 +80,15 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     protected float samplePeriod;
     protected Route streamRoute = null;
 
-    // gyro parametter
+    // gyro parameters
     private static final float[] AVAILABLE_RANGES= {125.f, 250.f, 500.f, 1000.f, 2000.f};
     private static final float GYR_ODR= 25.f;
     private GyroBmi160 gyro = null;
+
+
+    // magnetometer parameters
+    private static final float B_FIELD_RANGE= 2500f, MAG_ODR= 25.f;
+    private MagnetometerBmm150 magnetometer = null;
 
     private Connection connection;
     private BtleService.LocalBinder serviceBinder;
@@ -320,6 +328,18 @@ public class PublishFragment extends Fragment implements ServiceConnection {
             }
         });
 
+        ((Switch) view.findViewById(R.id.magnet_control)).setOnCheckedChangeListener((compoundButton, b) -> {
+            if (b) {
+                magnet_setup();
+            } else {
+                magnet_clean();
+                if (streamRoute != null) {
+                    streamRoute.remove();
+                    streamRoute = null;
+                }
+            }
+        });
+
     }
 
     @Override
@@ -454,9 +474,43 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         ).stop();
     }
 
+
+    protected void magnet_setup() {
+        magnetometer.configure()
+                .outputDataRate(MagnetometerBmm150.OutputDataRate.ODR_25_HZ)
+                .commit();
+
+        final float period = 1 / MAG_ODR;
+        final AsyncDataProducer producer = magnetometer.packedMagneticField() == null ?
+                magnetometer.packedMagneticField() :
+                magnetometer.magneticField();
+        producer.addRouteAsync(source -> source.stream((data, env) -> {
+            final MagneticField value = data.value(MagneticField.class);
+            magnetMessage magnet = new magnetMessage(getTimeStamp(), value.toString());
+            mqtt_queue.add(gson.toJson(magnet));
+        })).continueWith(task -> {
+            streamRoute = task.getResult();
+
+            magnetometer.magneticField().start();
+            magnetometer.start();
+
+            return null;
+        });
+    }
+
+
+    protected void magnet_clean() {
+        magnetometer.stop();
+        (magnetometer.packedMagneticField() == null ?
+                magnetometer.packedMagneticField() :
+                magnetometer.magneticField()
+        ).stop();
+    }
+
     private void boardReady() throws UnsupportedModuleException {
         accelerometer = board.getModuleOrThrow(Accelerometer.class);
         gyro = board.getModuleOrThrow(GyroBmi160.class);
+        magnetometer = board.getModuleOrThrow(MagnetometerBmm150.class);
 
     }
 
@@ -490,7 +544,6 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                 count++;
                 publishProgress(count);
                 // SystemClock.sleep(timeInterval);
-
             }
 
             return null;
