@@ -111,6 +111,9 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     private Button publishButton;
     private Button msgCountButton;
     private Button sensorConnectButton;
+    private Switch accSwitch;
+    private Switch gyroSwitch;
+    private Switch magnetSwitch;
     private Boolean isSensorConnected = false;
     private EditText timeIntervalEditText;
     private TextView motionSensorLable;
@@ -257,6 +260,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                                 public void run() {
                                     sensorConnectButton.setText("Connect");
                                     sensorConnectButton.setEnabled(true);
+                                    enableSwitch(false);
                                 }
                             });
                             return null;
@@ -304,7 +308,8 @@ public class PublishFragment extends Fragment implements ServiceConnection {
 
         mqtt_queue = new LinkedBlockingQueue();
 
-        ((Switch) view.findViewById(R.id.acc_control)).setOnCheckedChangeListener((compoundButton, b) -> {
+        accSwitch = (Switch) view.findViewById(R.id.acc_control);
+        accSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
             if (b) {
                 setup_acc();
             } else {
@@ -316,7 +321,8 @@ public class PublishFragment extends Fragment implements ServiceConnection {
             }
         });
 
-        ((Switch) view.findViewById(R.id.gyro_control)).setOnCheckedChangeListener((compoundButton, b) -> {
+        gyroSwitch = (Switch) view.findViewById(R.id.gyro_control);
+        gyroSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
             if (b) {
                 gyro_setup();
             } else {
@@ -328,7 +334,8 @@ public class PublishFragment extends Fragment implements ServiceConnection {
             }
         });
 
-        ((Switch) view.findViewById(R.id.magnet_control)).setOnCheckedChangeListener((compoundButton, b) -> {
+        magnetSwitch = (Switch) view.findViewById(R.id.magnet_control);
+        magnetSwitch.setOnCheckedChangeListener((compoundButton, b) -> {
             if (b) {
                 magnet_setup();
             } else {
@@ -339,6 +346,8 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                 }
             }
         });
+
+        enableSwitch(false);
 
     }
 
@@ -512,6 +521,8 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         gyro = board.getModuleOrThrow(GyroBmi160.class);
         magnetometer = board.getModuleOrThrow(MagnetometerBmm150.class);
 
+        enableSwitch(true);
+
     }
 
 
@@ -553,6 +564,24 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         protected void onProgressUpdate(Integer... progress) {
             msgCountButton.setText("message count: " + progress[0]);
         }
+    }
+
+    private void enableSwitch(boolean on) {
+        if(on) {
+           accSwitch.setClickable(true);
+           gyroSwitch.setClickable(true);
+           magnetSwitch.setClickable(true);
+        } else {
+            accSwitch.setClickable(false);
+            gyroSwitch.setClickable(false);
+            magnetSwitch.setClickable(false);
+
+            accSwitch.setChecked(false);
+            gyroSwitch.setChecked(false);
+            magnetSwitch.setChecked(false);
+
+        }
+
     }
 
 
