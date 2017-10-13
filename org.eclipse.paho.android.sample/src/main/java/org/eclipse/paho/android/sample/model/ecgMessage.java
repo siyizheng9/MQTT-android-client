@@ -6,10 +6,10 @@ package org.eclipse.paho.android.sample.model;
 
 public class ecgMessage {
     public String timestamp;
-    public String value;
+    public String ecg;
 
     public ecgMessage(String time, String value) {
         this.timestamp = time;
-        this.value = value;
+        this.ecg = value;
     }
 }
