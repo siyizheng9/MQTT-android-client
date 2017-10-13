@@ -32,12 +32,20 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.mbientlab.metawear.AsyncDataProducer;
 import com.mbientlab.metawear.MetaWearBoard;
+import com.mbientlab.metawear.Route;
+import com.mbientlab.metawear.UnsupportedModuleException;
 import com.mbientlab.metawear.android.BtleService;
+import com.mbientlab.metawear.data.Acceleration;
+import com.mbientlab.metawear.module.Accelerometer;
+import com.mbientlab.metawear.module.AccelerometerBosch;
+import com.mbientlab.metawear.module.AccelerometerMma8452q;
 import com.opencsv.CSVReader;
 
 import org.eclipse.paho.android.sample.R;
 import org.eclipse.paho.android.sample.internal.Connections;
+import org.eclipse.paho.android.sample.model.accMessage;
 import org.eclipse.paho.android.sample.model.ecgMessage;
 
 import java.io.IOException;
@@ -49,6 +57,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import bolts.Continuation;
 import bolts.Task;
@@ -57,13 +67,26 @@ import bolts.Task;
 public class PublishFragment extends Fragment implements ServiceConnection {
 
     private final String LOGTAG = "PublishFragment";
+
+    // accelerator parameter
+    private static final float[] MMA845Q_RANGES= {2.f, 4.f, 8.f}, BOSCH_RANGES = {2.f, 4.f, 8.f, 16.f};
+    private static final float INITIAL_RANGE= 2.f, ACC_FREQ= 50.f;
+    protected float samplePeriod;
+    protected Route streamRoute = null;
+
     private Connection connection;
     private BtleService.LocalBinder serviceBinder;
     private final String MW_MAC_ADDRESS= "CC:7E:26:31:C2:5F";
     private MetaWearBoard board;
+    private Accelerometer accelerometer = null;
+    private int rangeIndex= 0;
+    private BlockingQueue acc_queue;
 
     private int selectedQos = 0;
     private boolean retainValue = false;
+    private boolean boardReady = false;
+    private Boolean isPublish = false;
+
     // private String topic = "paho/test/simple";
     private String topic = "ecg/test/client-id/data";
     private String message = "Hello world";
@@ -156,12 +179,16 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         publishButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                System.out.println("Publishing: [topic: " + topic + ", message: " + message + ", QoS: " + selectedQos + ", Retain: " + retainValue + "]");
-                ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
-
-
+                System.out.println("Publishing timestamp: [topic: " + topic + ", QoS: " + selectedQos + ", Retain: " + retainValue + "]");
+                if(isPublish == false){
+                    startPublish();
+                }
+                else{
+                    stopPublish();
+                }
             }
         });
+
 
         msgCountButton = (Button) rootView.findViewById(R.id.msg_count_button);
         motionSensorLable = (TextView) rootView.findViewById(R.id.motion_sensor_label);
@@ -183,8 +210,16 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                             }
                             getActivity().runOnUiThread(new Runnable() {
                                 public void run() {
-                                    if (isSensorConnected)
+                                    if (isSensorConnected) {
+
                                         sensorConnectButton.setText("Disconnect");
+                                        try {
+                                            boardReady = true;
+                                            boardReady();
+                                        } catch (UnsupportedModuleException e) {
+                                            Log.i(LOGTAG, "unsupportedModule");
+                                        }
+                                    }
                                     else
                                         Notify.toast(getContext(), "Connection failed", Toast.LENGTH_SHORT);
 
@@ -246,6 +281,26 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     }
 
     @Override
+    public void onViewCreated(final View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        acc_queue = new LinkedBlockingQueue();
+
+        ((Switch) view.findViewById(R.id.acc_control)).setOnCheckedChangeListener((compoundButton, b) -> {
+            if (b) {
+                setup_acc();
+            } else {
+                acc_clean();
+                if (streamRoute != null) {
+                    streamRoute.remove();
+                    streamRoute = null;
+                }
+            }
+        });
+
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
 
@@ -253,13 +308,30 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         getActivity().getApplicationContext().unbindService(this);
     }
 
+    private void startPublish(){
+        isPublish = true;
+        publishButton.setText(getResources().getString(R.string.stop_publish));
+        msgCountButton.setVisibility(View.VISIBLE);
+        new Notify().EnableToast = false;
+        BgTask = new PublishTimestampTask().execute();
+
+    }
+
+    private void stopPublish(){
+        isPublish = false;
+        BgTask.cancel(true);
+        publishButton.setText(getResources().getString(R.string.start_publish));
+        new Notify().EnableToast = true;
+
+    }
+
+
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
         // Typecast the binder to the service's LocalBinder class
         serviceBinder = (BtleService.LocalBinder) service;
 
         retrieveBoard();
-
 
 
     }
@@ -287,6 +359,48 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         board = serviceBinder.getMetaWearBoard(remoteDevice);
     }
 
+    private void setup_acc() {
+        Accelerometer.ConfigEditor<?> editor = accelerometer.configure();
+
+        editor.odr(ACC_FREQ);
+        if (accelerometer instanceof AccelerometerBosch) {
+            editor.range(BOSCH_RANGES[rangeIndex]);
+        } else if (accelerometer instanceof AccelerometerMma8452q) {
+            editor.range(MMA845Q_RANGES[rangeIndex]);
+        }
+        editor.commit();
+
+        samplePeriod = 1 / accelerometer.getOdr();
+
+        final AsyncDataProducer producer = accelerometer.packedAcceleration() == null ?
+                accelerometer.packedAcceleration() :
+                accelerometer.acceleration();
+        producer.addRouteAsync(source -> source.stream((data, env) -> {
+            final Acceleration value = data.value(Acceleration.class);
+            Log.i(LOGTAG, "acc value: " + value.toString());
+            acc_queue.add(value);
+            //addChartData(value.x(), value.y(), value.z(), samplePeriod);
+        })).continueWith(task -> {
+            streamRoute = task.getResult();
+            producer.start();
+            accelerometer.start();
+            return null;
+        });
+    }
+
+    private void acc_clean() {
+        accelerometer.stop();
+
+        (accelerometer.packedAcceleration() == null ?
+                accelerometer.packedAcceleration() :
+                accelerometer.acceleration()
+        ).stop();
+    }
+
+    private void boardReady() throws UnsupportedModuleException {
+        accelerometer = board.getModuleOrThrow(Accelerometer.class);
+
+    }
 
 
     private class PublishTimestampTask extends AsyncTask<Void, Integer, Void> {
@@ -295,21 +409,32 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         protected Void doInBackground(Void... countArray) {
 
             int count = 0;
-            List<String[]> dataList = readCsv(getContext());
+            //List<String[]> dataList = readCsv(getContext());
             Gson gson = new Gson();
 
-            for(int i = 0; i < dataList.size(); i++) {
+            for(; ;) {
                 if(isCancelled())
                     break;
 
-                ecgMessage record = new ecgMessage(dataList.get(i)[0], dataList.get(i)[1]);
-                message = gson.toJson(record);
+                // ecgMessage record = new ecgMessage(dataList.get(i)[0], dataList.get(i)[1]);
+                Acceleration acc_value = null;
+
+                try{
+                    acc_value = (Acceleration) acc_queue.take();
+                } catch (InterruptedException ex) {
+
+                }
+
+                if(acc_value == null)
+                    continue;
+
+                message = gson.toJson(new accMessage(getTimeStamp(), acc_value.toString()));
 
                 ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
 
                 count++;
                 publishProgress(count);
-                SystemClock.sleep(timeInterval);
+                // SystemClock.sleep(timeInterval);
 
             }
 
