@@ -107,7 +107,6 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                              Bundle savedInstanceState) {
         final View rootView = inflater.inflate(R.layout.fragment_publish, container, false);
         EditText topicText = (EditText) rootView.findViewById(R.id.topic);
-        EditText messageText = (EditText) rootView.findViewById(R.id.message);
         Spinner qos = (Spinner) rootView.findViewById(R.id.qos_spinner);
         final Switch retain = (Switch) rootView.findViewById(R.id.retain_switch);
         topicText.setText(topic);
@@ -129,22 +128,6 @@ public class PublishFragment extends Fragment implements ServiceConnection {
             }
         });
 
-        messageText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                message = s.toString();
-            }
-        });
 
         qos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
