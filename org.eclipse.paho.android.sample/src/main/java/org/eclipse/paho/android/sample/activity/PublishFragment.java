@@ -53,14 +53,12 @@ import org.eclipse.paho.android.sample.model.accMessage;
 import org.eclipse.paho.android.sample.model.ecgMessage;
 import org.eclipse.paho.android.sample.model.gyroMessage;
 import org.eclipse.paho.android.sample.model.magnetMessage;
-import org.eclipse.paho.android.sample.model.mqttMessage;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -99,7 +97,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     private Accelerometer accelerometer = null;
     private int rangeIndex= 0;
 
-    private BlockingQueue<String> mqtt_queue;
+    private BlockingQueue mqtt_queue;
     Gson gson = new Gson();
 
     private int selectedQos = 0;
@@ -191,8 +189,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
             }
         });
 
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(),
-                R.array.qos_options, android.R.layout.simple_spinner_item);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(), R.array.qos_options, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         qos.setAdapter(adapter);
 
@@ -200,8 +197,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
         publishButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i(LOGTAG, "Publish sensor data: [topic: " + topic + ", QoS: " + selectedQos +
-                        ", Retain: " + retainValue + "]");
+                System.out.println("Publishing timestamp: [topic: " + topic + ", QoS: " + selectedQos + ", Retain: " + retainValue + "]");
                 if(isPublish == false){
                     startPublish();
                 }
@@ -530,30 +526,24 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                 if(isCancelled())
                     break;
 
-               /* String value = null;
+                String value = null;
                 try{
+
                     value = (String) mqtt_queue.take();
                 } catch (InterruptedException ex) {
 
                 }
 
                 if (value == null)
-                    continue;*/
+                    continue;
 
-                String[] dataArray = mqtt_queue.toArray(new String[0]);
+                message = value;
 
-                if(dataArray.length > 0){
-                    mqttMessage mqttmsg = new mqttMessage(dataArray);
+                ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
 
-                    message = gson.toJson(mqttmsg);
-
-                    ((MainActivity) getActivity()).publish(connection, topic, message, selectedQos, retainValue);
-
-                    count++;
-                    publishProgress(count);
-                }
-
-                SystemClock.sleep(timeInterval);
+                count++;
+                publishProgress(count);
+                // SystemClock.sleep(timeInterval);
             }
 
             return null;
