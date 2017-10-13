@@ -28,6 +28,7 @@
             android:ems="10"
             android:lines="1"
             android:id="@+id/topic"/>
+
     </LinearLayout>
 
 
@@ -38,46 +39,13 @@
 
 
 
-    <LinearLayout
-        android:id="@+id/lwt_message_group"
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/divider8">
-
-        <TextView
-            android:id="@+id/lwt_message_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/spinnerTextFieldLabel"
-            android:text="@string/add_connection_lwt_message_label"/>
-
-        <EditText
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="30dp"
-            android:inputType="textMultiLine"
-            android:ems="10"
-            android:lines="3"
-            android:id="@+id/message"/>
-    </LinearLayout>
-
-
-
-
-    <View
-        android:id="@+id/divider9"
-        style="@style/Divider"
-        android:layout_below="@+id/lwt_message_group" />
-
-
 
     <LinearLayout
         android:id="@+id/lwt_qos_group"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/divider9">
+        android:layout_below="@+id/divider8">
 
         <TextView
             android:id="@+id/lwt_qos_label"
@@ -104,14 +72,6 @@
         style="@style/Switch"
         android:checked="false" />
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/publish"
-        android:id="@+id/publish_button"
-        android:layout_below="@+id/retain_switch"
-        android:layout_centerHorizontal="true" />
-
 
 
     <LinearLayout
@@ -119,7 +79,7 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/publish_button"
+        android:layout_below="@+id/retain_switch"
         android:gravity="center">
 
         <TextView
@@ -149,19 +109,11 @@
             android:text="@string/time_interval_ms"/>
     </LinearLayout>
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/msg_count"
-        android:id="@+id/msg_count_button"
-        android:layout_below="@+id/time_interval_group"
-        android:layout_centerHorizontal="true"
-        android:visibility="invisible"/>
 
 
     <LinearLayout
         android:id="@+id/connect_group"
-        android:layout_below="@id/msg_count_button"
+        android:layout_below="@id/time_interval_group"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -181,6 +133,23 @@
             android:id="@+id/connectButton"/>
 
     </LinearLayout>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/publish"
+        android:id="@+id/publish_button"
+        android:layout_below="@+id/connect_group"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/msg_count"
+        android:id="@+id/msg_count_button"
+        android:layout_below="@+id/publish_button"
+        android:layout_centerHorizontal="true"
+        android:visibility="invisible"/>
 
 
 
