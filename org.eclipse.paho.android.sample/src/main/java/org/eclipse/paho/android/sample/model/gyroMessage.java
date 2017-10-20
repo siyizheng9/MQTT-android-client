@@ -7,10 +7,17 @@ package org.eclipse.paho.android.sample.model;
 public class gyroMessage {
 
     public String timestamp;
-    public String gyro;
+    public String type = "gyro";
 
-    public gyroMessage(String timestamp, String value) {
-        this.timestamp = timestamp;
-        this.gyro = value;
+    public float x;
+    public float y;
+    public float z;
+
+    public gyroMessage(String time, float x, float y, float z) {
+        this.timestamp = time;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
+
 }

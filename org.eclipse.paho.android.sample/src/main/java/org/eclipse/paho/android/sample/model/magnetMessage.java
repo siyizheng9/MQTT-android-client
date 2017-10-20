@@ -7,10 +7,16 @@ package org.eclipse.paho.android.sample.model;
 public class magnetMessage {
 
     public String timestamp;
-    public String magnetometer;
+    public String type = "magnetometer";
+    public float x;
+    public float y;
+    public float z;
 
-    public magnetMessage(String time, String value) {
+    public magnetMessage(String time, float x, float y, float z) {
         this.timestamp = time;
-        this.magnetometer = value;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
+
 }

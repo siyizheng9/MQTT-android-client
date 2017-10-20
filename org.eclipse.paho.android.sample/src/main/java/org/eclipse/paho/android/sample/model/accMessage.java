@@ -7,10 +7,15 @@ package org.eclipse.paho.android.sample.model;
 public class accMessage {
 
     public String timestamp;
-    public String accelerometer;
+    public String type = "accelerometer";
+    public float x;
+    public float y;
+    public float z;
 
-    public accMessage(String time, String value) {
+    public accMessage(String time, float x, float y, float z) {
         this.timestamp = time;
-        this.accelerometer = value;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 }

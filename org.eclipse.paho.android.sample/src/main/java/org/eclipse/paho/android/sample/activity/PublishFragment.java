@@ -411,6 +411,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
     }
 
     private void setup_acc() {
+        Log.i(LOGTAG, "setup acc");
         Accelerometer.ConfigEditor<?> editor = accelerometer.configure();
 
         editor.odr(ACC_FREQ);
@@ -428,8 +429,8 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                 accelerometer.acceleration();
         producer.addRouteAsync(source -> source.stream((data, env) -> {
             final Acceleration value = data.value(Acceleration.class);
-            //Log.i(LOGTAG, "acc value: " + value.toString());
-            accMessage acc = new accMessage(getTimeStamp(), value.toString());
+            Log.i(LOGTAG, "acc value: " + value.toString());
+            accMessage acc = new accMessage(getTimeStamp(), value.x(), value.y(), value.z());
             mqtt_queue.add(gson.toJson(acc));
             //addChartData(value.x(), value.y(), value.z(), samplePeriod);
         })).continueWith(task -> {
@@ -462,7 +463,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                 gyro.angularVelocity();
         producer.addRouteAsync(source -> source.stream((data, env) -> {
             final AngularVelocity value = data.value(AngularVelocity.class);
-            gyroMessage gyro = new gyroMessage(getTimeStamp(), value.toString());
+            gyroMessage gyro = new gyroMessage(getTimeStamp(), value.x(), value.y(), value.z());
             mqtt_queue.add(gson.toJson(gyro));
         })).continueWith(task -> {
             streamRoute = task.getResult();
@@ -495,7 +496,7 @@ public class PublishFragment extends Fragment implements ServiceConnection {
                 magnetometer.magneticField();
         producer.addRouteAsync(source -> source.stream((data, env) -> {
             final MagneticField value = data.value(MagneticField.class);
-            magnetMessage magnet = new magnetMessage(getTimeStamp(), value.toString());
+            magnetMessage magnet = new magnetMessage(getTimeStamp(), value.x(), value.y(), value.z());
             mqtt_queue.add(gson.toJson(magnet));
         })).continueWith(task -> {
             streamRoute = task.getResult();
